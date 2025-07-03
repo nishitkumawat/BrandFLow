@@ -1,13 +1,40 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
-const navItems = ["Home", "About", "Help Center", "Pricing"];
+const navItems = [
+  { id: "home", label: "Home" },
+  { id: "about", label: "About" },
+  { id: "help", label: "Help Center" },
+  { id: "price", label: "Pricing" },
+];
 
 const Nav = () => {
+  const [activeSection, setActiveSection] = useState("home");
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 200;
+
+      for (const item of navItems) {
+        const section = document.getElementById(item.id);
+        if (section) {
+          const top = section.offsetTop;
+          const bottom = top + section.offsetHeight;
+
+          if (scrollPos >= top && scrollPos < bottom) {
+            setActiveSection(item.id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // run on load
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header
-      className="fixed top-0 left-0 w-full shadow z-50 transition-all duration-400"
-      style={{ backgroundColor: "#00031c" }}
-    >
+    <header className="fixed top-0 left-0 w-full z-50 backdrop-blur bg-[#00031c]/60 shadow-md transition-all duration-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -17,13 +44,17 @@ const Nav = () => {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex space-x-10">
-            {navItems.map((item, i) => (
+            {navItems.map((item) => (
               <a
-                key={i}
-                href="#"
-                className="group relative text-gray-400 hover:text-white transition duration-500"
+                key={item.id}
+                href={`#${item.id}`}
+                className={`group relative transition duration-300 ${
+                  activeSection === item.id
+                    ? "text-white"
+                    : "text-gray-400 hover:text-white"
+                }`}
               >
-                <span>{item}</span>
+                <span>{item.label}</span>
                 <span
                   className="absolute left-1/2 -bottom-1 w-0 h-[2px] 
                     group-hover:w-full group-hover:left-0 group-hover:opacity-100 
@@ -32,6 +63,11 @@ const Nav = () => {
                     background:
                       "radial-gradient(ellipse at center, #3b82f6 0%, #3b82f6aa 40%, transparent 80%)",
                     borderRadius: "9999px",
+                    ...(activeSection === item.id && {
+                      width: "100%",
+                      left: "0",
+                      opacity: 1,
+                    }),
                   }}
                 ></span>
               </a>
@@ -52,7 +88,7 @@ const Nav = () => {
                   }}
                 ></span>
               </button>
-              <div className="absolute top-full mt-2 w-40 bg-[#00031c] border border-gray-700 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none group-hover:pointer-events-auto">
+              <div className="absolute top-full mt-2 w-40 bg-[#00031c]/70 border border-gray-700 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none group-hover:pointer-events-auto backdrop-blur">
                 {["Blog", "Contact"].map((label, index) => (
                   <a
                     key={index}
@@ -85,7 +121,7 @@ const Nav = () => {
               Get Started
             </a>
 
-            {/* Mobile button */}
+            {/* Mobile Button */}
             <button className="md:hidden p-2 text-gray-400">
               <svg
                 className="w-6 h-6"

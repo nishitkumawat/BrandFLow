@@ -51,7 +51,7 @@ const Footer = () => {
             <h2 className="font-semibold text-gray-300 mb-5">Get in touch</h2>
             <div className="text-sm space-y-2">
               <p>+91 12345 67890</p>
-              <p>support@brandflow.com</p>
+              <p>support@.com</p>
             </div>
           </div>
         </div>
