@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const navItems = [
   { id: "home", label: "Home" },
@@ -8,6 +9,7 @@ const navItems = [
 ];
 
 const Nav = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("home");
 
   useEffect(() => {
@@ -115,8 +117,8 @@ const Nav = () => {
           {/* Right Side */}
           <div className="flex items-center space-x-4">
             <a
-              href="#"
-              className="relative hidden md:inline-flex items-center px-6 py-2 border border-gray-400 text-gray-300 rounded-full transition duration-300 hover:text-white hover:border-white hover:shadow-[0_0_10px_2px_rgba(255,255,255,0.4)]"
+              onClick={() => navigate("/login")}
+              className="cursor-pointer relative hidden md:inline-flex items-center px-6 py-2 border border-gray-400 text-gray-300 rounded-full transition duration-300 hover:text-white hover:border-white hover:shadow-[0_0_10px_2px_rgba(255,255,255,0.4)]"
             >
               Get Started
             </a>

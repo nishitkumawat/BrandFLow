@@ -4,6 +4,8 @@ import Nav from "../../../frontend/src/Components/Nav";
 import Footer from "../../../frontend/src/Components/Footer";
 import { Sparkles, ArrowRight, ArrowUp } from "lucide-react";
 import Scrollbar from "../Components/ScrollBar";
+import axios from "axios";
+import bgImage from "../assets/background.png"; // adjust path as per your folder structure
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -51,55 +53,65 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="bg-[#00031c] text-gray-400 min-h-screen pt-24 px-4 sm:px-8 relative overflow-hidden">
-      <Scrollbar />
-      <Nav />
-
-      {/* Hero Section */}
-      <motion.div
-        id="home"
-        className="relative z-10 text-center space-y-4 mt-10"
-        initial="hidden"
-        animate="show"
-        variants={staggerContainer}
+    <div className="relative min-h-screen text-gray-400 bg-[#00031c] overflow-hidden pt-24">
+      <div
+        className=" inset-0 z-0"
+        style={{
+          backgroundImage: `url(${bgImage})`,
+          backgroundSize: "cover",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          height: "100vh",
+        }}
       >
+        <Scrollbar />
+        <Nav />
+
+        {/* Hero Section */}
         <motion.div
-          className="relative flex justify-center items-center gap-4 text-sm text-gray-400"
-          variants={fadeInUp}
+          id="home"
+          className="relative z-10 text-center space-y-4 mt-10 "
+          initial="hidden"
+          animate="show"
+          variants={staggerContainer}
         >
-          <img
-            src="https://wpriverthemes.com/nexux/wp-content/themes/nexux/icons/sub-title-left.svg"
-            alt="subtitle"
-            className="w-5 h-5"
-          />
-          <div className="relative flex items-center justify-center">
-            <div className="absolute w-32 h-32 bg-blue-500 blur-3xl rounded-full opacity-50 z-[-1]" />
-            <p className="relative z-10">A.I Driven</p>
-          </div>
-          <img
-            src="https://wpriverthemes.com/nexux/wp-content/themes/nexux/icons/sub-title-right.svg"
-            alt="subtitle"
-            className="w-5 h-5"
-          />
+          <motion.div
+            className="relative flex justify-center items-center gap-4 text-sm text-gray-400"
+            variants={fadeInUp}
+          >
+            <img
+              src="https://wpriverthemes.com/nexux/wp-content/themes/nexux/icons/sub-title-left.svg"
+              alt="subtitle"
+              className="w-5 h-5"
+            />
+            <div className="relative flex items-center justify-center">
+              <div className="absolute w-32 h-32 bg-blue-500 blur-3xl rounded-full opacity-50 z-[-1]" />
+              <p className="relative z-10">A.I Driven</p>
+            </div>
+            <img
+              src="https://wpriverthemes.com/nexux/wp-content/themes/nexux/icons/sub-title-right.svg"
+              alt="subtitle"
+              className="w-5 h-5"
+            />
+          </motion.div>
+
+          <motion.h1
+            className="text-white text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
+            variants={fadeInUp}
+          >
+            Transform Your Business <br />
+            with AI-Powered Solutions
+          </motion.h1>
+
+          <motion.p
+            className="text-gray-400 text-sm sm:text-base max-w-xl mx-auto flex items-center justify-center gap-2"
+            variants={fadeInUp}
+          >
+            <Sparkles className="text-blue-500 animate-pulse" size={20} />
+            Our AI platform automates repetitive tasks
+          </motion.p>
         </motion.div>
-
-        <motion.h1
-          className="text-white text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
-          variants={fadeInUp}
-        >
-          Transform Your Business <br />
-          with AI-Powered Solutions
-        </motion.h1>
-
-        <motion.p
-          className="text-gray-400 text-sm sm:text-base max-w-xl mx-auto flex items-center justify-center gap-2"
-          variants={fadeInUp}
-        >
-          <Sparkles className="text-blue-500 animate-pulse" size={20} />
-          Our AI platform automates repetitive tasks
-        </motion.p>
-      </motion.div>
-
+      </div>
       {/* About Section */}
       <motion.section
         id="about"
@@ -205,7 +217,7 @@ const LandingPage = () => {
             <div className="absolute w-32 h-32 bg-blue-500 blur-3xl rounded-full opacity-50 z-[-1]" />
             <p className="relative z-10">Help Center</p>
           </div>
-          
+
           <img
             src="https://wpriverthemes.com/nexux/wp-content/themes/nexux/icons/sub-title-right.svg"
             alt="subtitle"
@@ -290,22 +302,39 @@ const LandingPage = () => {
               id="chatInput"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  const input = e.target.value;
-                  if (!input.trim()) return;
+                  const input = e.target.value.trim();
+                  if (!input) return;
 
                   const chatbox = document.getElementById("chatbox");
+
+                  // Append user's message
                   const userDiv = document.createElement("div");
                   userDiv.innerHTML = `<strong class="text-green-400">You:</strong> ${input}`;
                   chatbox.appendChild(userDiv);
 
-                  const replyDiv = document.createElement("div");
-                  setTimeout(() => {
-                    replyDiv.innerHTML = `<strong class="text-blue-400">Gemini:</strong> I’ll get back to you on that!`;
-                    chatbox.appendChild(replyDiv);
-                    chatbox.scrollTop = chatbox.scrollHeight;
-                  }, 500);
+                  // Scroll to bottom
+                  chatbox.scrollTop = chatbox.scrollHeight;
 
+                  // Clear input
                   e.target.value = "";
+
+                  // Send to Django backend
+                  axios
+                    .post("http://localhost:8000/api/chat/", {
+                      message: input,
+                    })
+                    .then((res) => {
+                      const replyDiv = document.createElement("div");
+                      replyDiv.innerHTML = `<strong class="text-blue-400">Gemini:</strong> ${res.data.reply}`;
+                      chatbox.appendChild(replyDiv);
+                      chatbox.scrollTop = chatbox.scrollHeight;
+                    })
+                    .catch((err) => {
+                      const errorDiv = document.createElement("div");
+                      errorDiv.innerHTML = `<strong class="text-red-400">Error:</strong> Something went wrong.`;
+                      chatbox.appendChild(errorDiv);
+                      chatbox.scrollTop = chatbox.scrollHeight;
+                    });
                 }
               }}
             />
