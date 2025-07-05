@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Footer from "../../../frontend/src/Components/Footer"; // Adjust if needed
 import Scrollbar from "../Components/ScrollBar";
 import bgImage from "../assets/background.png"; // Make sure this image exists
+import axios from "axios";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -24,6 +25,20 @@ const Login = () => {
     console.log("Email:", email);
     console.log("Password:", password);
     // Handle login logic here
+    axios
+      .post("http://localhost:8000/authentication/login/", {
+        email: email,
+        password: password,
+      })
+      .then((res) => {
+        alert("true: " + res.data.user.email); // ✅ backend msg
+        navigate("/dashboard");
+      })
+      .catch((err) => {
+        const errorMsg = err.response?.data?.error || "Unknown error";
+        console.error(errorMsg);
+        alert("false: " + errorMsg); // ✅ shows backend error
+      });
   };
 
   return (

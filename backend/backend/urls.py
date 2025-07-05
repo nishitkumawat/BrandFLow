@@ -3,5 +3,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('chatbot.urls')),  # <- This ensures /api/chat/ works
+    path('api/', include('chatbot.urls')),
+   path('authentication/', include('authentication.urls')),
+
 ]
