@@ -6,7 +6,7 @@ import re
 
 
 @api_view(["POST"])
-def login(request):
+def loginUser(request):
     email = request.data.get("email")
     password = request.data.get("password")
 
@@ -27,7 +27,7 @@ def is_valid_password(password):
     return re.match(pattern, password)
 
 @api_view(["POST"])
-def signup(request):
+def signupUser(request):
     name = request.data.get("name")
     email = request.data.get("email")
     password = request.data.get("password")
