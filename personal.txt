@@ -1,6 +1,7 @@
 python manage.py runserver
 .\env\Scripts\activate
 python manage.py startapp app_name
+
 git add .
 git commit -m "Initial commit"
 git branch -M main
@@ -10,3 +11,76 @@ git push -u origin main
 1. git add .
 2. git commit -m ""
 3. git push
+
+
+
+✅ Client Management
+
+Create/read/update/delete (CRUD) clients
+
+Link clients to specific projects
+
+Client notes, contact info, status
+
+✅ Task & Time Tracking
+
+Assign tasks to employees
+
+Task status: To Do / In Progress / Done
+
+Optional: Log time spent on each task
+
+✅ Budgeting & Expense Tracking
+
+Set budget per project/marketing campaign
+
+Track actual expenses
+
+Show budget vs actual with charts
+
+✅ Calendar Integration
+
+Add deadlines, events, and meetings
+
+Sync with Google Calendar API (optional)
+
+Calendar view with filters (per team/project)
+
+✅ Document & Asset Management
+
+Upload documents per project/client
+
+Categorize by file type
+
+Preview and restrict access by role
+
+✅ Notifications System
+
+In-app and/or email notifications
+
+Trigger on task assignment, project update, approaching deadlines
+
+
+
+1. Task Priority Predictor
+Predict task priority (Low, Medium, High) based on task description.
+
+Input: task_name, task_description
+
+Output: Predicted priority level
+
+Model: Logistic Regression or Random Forest
+
+Data: You can start with a small manually labeled CSV of 100–200 tasks.
+
+4. Deadline Risk Predictor
+Predict if a project is at risk of missing the deadline.
+
+Input: team size, progress %, remaining days
+
+Output: Risk Level (Low / Medium / High)
+
+Model: Logistic Regression
+
+Can be trained on dummy project data.
+

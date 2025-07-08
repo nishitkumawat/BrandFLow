@@ -20,4 +20,3 @@ class MongoService:
 
     def delete(self, collection,query):
         return  self.db[collection].delete_one(query)
-    

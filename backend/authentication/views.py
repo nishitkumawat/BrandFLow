@@ -3,23 +3,22 @@ from rest_framework.response import Response
 from utils.database import MongoService
 import re
 
+
+
 @api_view(["POST"])
 def login(request):
     email = request.data.get("email")
     password = request.data.get("password")
 
-
     if not email or not password:
-        return Response({"error": "Email and password are required."}, status=400)
+        return Response({"error": "Email and password are required."})
 
     db = MongoService()
     user = db.find("users", {"email": email, "password": password})
-    print("🔎 User lookup result:", user)
-
     if user:
         return Response({"message": "Login successful", "user": user[0]})
     else:
-        return Response({"error": "Invalid email or password"}, status=401)
+        return Response({"error": "Invalid email or password"})
     
     
   
@@ -34,7 +33,7 @@ def signup(request):
     password = request.data.get("password")
 
     if not name or not email or not password:
-        return Response({"error": "Name, email, and password are required."}, status=400)
+        return Response({"error": "Name, email, and password are required."})
 
     if not is_valid_password(password):
         return Response({
@@ -44,7 +43,7 @@ def signup(request):
     db = MongoService()
     existing_user = db.find("users", {"email": email})
     if existing_user:
-        return Response({"error": "User with this email already exists."}, status=409)
+        return Response({"error": "User with this email already exists."})
 
     db.insert("users", {
         "name": name,
