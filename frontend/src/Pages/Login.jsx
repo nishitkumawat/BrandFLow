@@ -25,7 +25,6 @@ const Login = () => {
     console.log("Email:", email);
     console.log("Password:", password);
     // Handle login logic here
-    setLoading(true);
     axios
       .post("http://localhost:8000/authentication/login/", {
         email: email,
@@ -41,7 +40,6 @@ const Login = () => {
         console.error(errorMsg);
         alert("false: " + errorMsg); // ✅ shows backend error
       });
-    setLoading(false);
   };
 
   return (

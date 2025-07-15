@@ -1,0 +1,6 @@
+email = ""
+username = ""
+comapny_name = ""
+phone_no = ""
+company_phone_no = ""
+comapny_address = ""
