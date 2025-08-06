@@ -9,6 +9,7 @@ import {
   Briefcase,
   DollarSign,
   LogOut,
+  Building2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -102,6 +103,14 @@ const Sidebar = () => {
                 className="flex items-center gap-2 px-2 py-1 hover:text-blue-400 transition"
               >
                 <DollarSign size={16} /> Budget & Expenses
+              </Link>
+            </li>
+            <li className="pl-2">
+              <Link
+                to="/dashboard/company"
+                className="flex items-center gap-2 px-2 py-1 hover:text-blue-400 transition"
+              >
+                <Building2 size={16} /> Company Profile
               </Link>
             </li>
           </ul>

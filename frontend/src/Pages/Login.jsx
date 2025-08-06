@@ -32,8 +32,11 @@ const Login = () => {
       })
       .then((res) => {
         alert("true: " + res.data.user.email); // ✅ backend msg
-
-        navigate("/dashboard");
+        if (res.data.firstLogin == "true") {
+          navigate("/companyDetails");
+        } else {
+          navigate("/dashboard");
+        }
       })
       .catch((err) => {
         const errorMsg = err.response?.data?.error || "Unknown error";

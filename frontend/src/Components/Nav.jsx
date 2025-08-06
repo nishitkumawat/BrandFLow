@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/logo.png"; // adjust path if needed
 
 const navItems = [
   { id: "home", label: "Home" },
@@ -40,8 +41,19 @@ const Nav = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="text-xl font-bold text-gray-300 hover:text-white transition">
-            BrandFlow
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            <img
+              src={logo}
+              alt="Logo"
+              className="h-12 w-12 md:h-12 md:w-12 object-contain"
+            />
+
+            <span className="text-xl font-bold text-gray-300 hover:text-white transition">
+              BrandFlow
+            </span>
           </div>
 
           {/* Desktop Nav */}
