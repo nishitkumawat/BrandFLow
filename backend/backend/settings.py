@@ -139,4 +139,3 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'nishit1060@gmail.com'
 EMAIL_HOST_PASSWORD = 'mugjbwtmigalkqot'  # use an app password for Gmail
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-

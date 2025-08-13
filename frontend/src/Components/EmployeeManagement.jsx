@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import Sidebar from "../Components/Sidebar";
-import { Users, PlusCircle } from "lucide-react";
+import { Users, PlusCircle, Pencil } from "lucide-react";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -19,8 +19,12 @@ const EmployeeManagement = () => {
     experience: "",
     joining_date: "",
     salary: "",
-    email: "", // Added email field
+    email: "",
   });
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editEmployeeId, setEditEmployeeId] = useState(null);
+  const [originalData, setOriginalData] = useState(null);
 
   useEffect(() => {
     fetchEmployees();
@@ -38,14 +42,38 @@ const EmployeeManagement = () => {
   const handleInputChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const isDataUnchanged = () => {
+    if (!originalData) return false;
+    return Object.keys(formData).every(
+      (key) => formData[key] === originalData[key]
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { name, role, experience, joining_date, salary, email } = formData;
-    if (!name || !role || !experience || !joining_date || !salary || !email)
+
+    if (!name || !role || !experience || !joining_date || !salary || !email) {
+      alert("Please fill in all fields.");
       return;
+    }
+
+    if (isEditMode && isDataUnchanged()) {
+      alert(
+        "No changes detected. Please update some fields before submitting."
+      );
+      return;
+    }
 
     try {
-      await axios.post("http://localhost:8000/dashboard/employees/", formData);
+      const payload = { ...formData };
+
+      if (isEditMode && editEmployeeId) {
+        payload.id = editEmployeeId;
+      }
+
+      await axios.post("http://localhost:8000/dashboard/employees/", payload);
+
       setFormData({
         name: "",
         role: "",
@@ -54,10 +82,29 @@ const EmployeeManagement = () => {
         salary: "",
         email: "",
       });
+      setIsEditMode(false);
+      setEditEmployeeId(null);
+      setOriginalData(null);
       fetchEmployees();
     } catch (err) {
-      console.error("Error adding employee:", err);
+      console.error("Error submitting form:", err);
+      alert("Error submitting the form. Check console for details.");
     }
+  };
+
+  const handleEdit = (employee) => {
+    const data = {
+      name: employee.name,
+      role: employee.role,
+      experience: employee.experience,
+      joining_date: employee.joining_date,
+      salary: employee.salary,
+      email: employee.email,
+    };
+    setFormData(data);
+    setOriginalData(data);
+    setIsEditMode(true);
+    setEditEmployeeId(employee.id);
   };
 
   return (
@@ -131,7 +178,8 @@ const EmployeeManagement = () => {
               type="submit"
               className="col-span-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition flex items-center justify-center gap-2"
             >
-              <PlusCircle size={18} /> Add Employee
+              <PlusCircle size={18} />
+              {isEditMode ? "Update Employee" : "Add Employee"}
             </button>
           </form>
 
@@ -140,8 +188,17 @@ const EmployeeManagement = () => {
             {employees.map((emp) => (
               <div
                 key={emp.id}
-                className="bg-[#0a0f2b] border border-gray-700 rounded-lg p-4 hover:border-white transition"
+                className="relative bg-[#0a0f2b] border border-gray-700 rounded-lg p-4 hover:border-white transition"
               >
+                {/* Edit Button at Top Right */}
+                <button
+                  onClick={() => handleEdit(emp)}
+                  className="absolute top-4 right-4 text-blue-400 hover:text-blue-500"
+                  title="Edit"
+                >
+                  <Pencil size={18} />
+                </button>
+
                 <h3 className="text-lg font-medium text-white">{emp.name}</h3>
                 <p className="text-sm text-gray-400">Role: {emp.role}</p>
                 <p className="text-sm text-gray-400">
