@@ -11,10 +11,17 @@ urlpatterns = [
     path('tasks/create/', views.create_task),
     path('data/', views.dashboard_data, name='dashboard_data'),
 
-    # ✅ Checkpoint endpoints
-    path('tasks/<int:task_id>/generate_ai_checkpoints/', views.generate_checkpoints),  # For existing task
-    path('generate_ai_checkpoints_preview/', views.generate_ai_checkpoints_preview),   # For before task creation
+    # Task endpoints
+    path('tasks/<int:task_id>/', views.get_task_details, name='task-detail'),
+    path('tasks/<int:task_id>/mark_completed/', views.mark_task_completed, name='mark-task-completed'),
+
+    # Checkpoint endpoints
+    path('tasks/<int:task_id>/generate_ai_checkpoints/', views.generate_checkpoints),
+    path('generate_ai_checkpoints_preview/', views.generate_ai_checkpoints_preview),
     path('tasks/<int:task_id>/add_checkpoint/', views.add_checkpoint),
     path('tasks/checkpoints/<int:checkpoint_id>/update/', views.update_checkpoint),
     path('tasks/<int:task_id>/checkpoints/', views.get_task_checkpoints, name='get_task_checkpoints'),
+
+    # Completed tasks
+    path('completed-tasks/', views.get_completed_tasks),
 ]

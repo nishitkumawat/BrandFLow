@@ -1,3 +1,4 @@
+from datetime import timezone
 from django.core.mail import send_mail, BadHeaderError, EmailMessage
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -439,65 +440,91 @@ def add_checkpoint(request, task_id):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
+
+import json
+import traceback
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from .models import Task, Checkpoint, CompletedTask
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def update_checkpoint(request, checkpoint_id):
     try:
-        # First validate the checkpoint_id
-        if not checkpoint_id or checkpoint_id == "undefined":
-            return JsonResponse({"error": "Invalid checkpoint ID"}, status=400)
-
         checkpoint = Checkpoint.objects.get(id=checkpoint_id)
         data = json.loads(request.body)
-        
-        # Validate the completed status is provided
+
         if "completed" not in data:
             return JsonResponse({"error": "Completed status is required"}, status=400)
-            
+
+        # Update checkpoint completion
         checkpoint.completed = data["completed"]
         checkpoint.save()
 
-        # Update task completion status
         task = checkpoint.task
+        if not task:
+            return JsonResponse({"error": "Task not found for this checkpoint"}, status=404)
+
+        # Update checkpoint stats
         task.total_checkpoints = task.checkpoints.count()
         task.completed_checkpoints = task.checkpoints.filter(completed=True).count()
-        
-        # Calculate completion percentage
-        completion_percentage = 0
-        if task.total_checkpoints > 0:
-            completion_percentage = int((task.completed_checkpoints / task.total_checkpoints) * 100)
-        
-        # Update task status based on completion
+
+        completion_percentage = task.completion_percentage()
+
         if completion_percentage == 100:
             task.completed = True
             task.status = "Completed"
-        else:
-            task.completed = False
-            task.status = f"{completion_percentage}% Completed"
-        
-        task.save()
+            task.save()
 
-        return JsonResponse({
-            "message": "Checkpoint updated successfully",
-            "checkpoint": {
-                "id": checkpoint.id,
-                "title": checkpoint.title,
-                "completed": checkpoint.completed,
-                "task_id": task.id
-            },
-            "task_status": {
-                "completed": task.completed,
-                "status": task.status,
-                "completion_percentage": completion_percentage
+            # Copy task to CompletedTask
+            completed_task = CompletedTask.objects.create(
+                title=task.title,
+                description=task.description,
+                team=task.team
+            )
+
+            response_data = {
+                "message": "Task completed successfully!",
+                "task_completed": True,
+                "completed_task": {
+                    "id": completed_task.id,
+                    "title": completed_task.title,
+                    "completion_date": completed_task.completion_date
+                }
             }
-        })
+
+            # Delete original task
+            task.delete()
+
+            return JsonResponse(response_data)
+
+        else:
+            task.status = f"{completion_percentage}% Completed"
+            task.completed = False
+            task.save()
+
+            return JsonResponse({
+                "message": "Checkpoint updated successfully",
+                "task_completed": False,
+                "task_status": {
+                    "completed": task.completed,
+                    "status": task.status,
+                    "completion_percentage": completion_percentage,
+                    "completed_checkpoints": task.completed_checkpoints,
+                    "total_checkpoints": task.total_checkpoints
+                }
+            })
 
     except Checkpoint.DoesNotExist:
         return JsonResponse({"error": "Checkpoint not found"}, status=404)
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
+        print("ERROR in update_checkpoint:", e)
+        traceback.print_exc()
         return JsonResponse({"error": str(e)}, status=500)
+
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -582,3 +609,43 @@ def get_completed_tasks(request):
     return JsonResponse({
         "completed_tasks": list(completed_tasks)
     })
+    
+@require_http_methods(["GET"])
+def get_task_details(request, task_id):
+    try:
+        # First try to find active task
+        try:
+            task = Task.objects.get(id=task_id)
+            checkpoints = list(task.checkpoints.values('id', 'title', 'completed'))
+            
+            return JsonResponse({
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "completed": task.completed,
+                "team_id": task.team_id,
+                "team_name": task.team.name if task.team else None,
+                "total_checkpoints": task.total_checkpoints,
+                "completed_checkpoints": task.completed_checkpoints,
+                "completion_percentage": task.completion_percentage(),
+                "checkpoints": checkpoints,
+                "is_completed": False,
+                "status": task.status
+            })
+        except Task.DoesNotExist:
+            # Check if task was moved to completed
+            completed_task = CompletedTask.objects.get(original_task_id=task_id)
+            return JsonResponse({
+                "id": completed_task.original_task_id,
+                "title": completed_task.title,
+                "description": completed_task.description,
+                "team_id": completed_task.team.id if completed_task.team else None,
+                "team_name": completed_task.team.name if completed_task.team else None,
+                "completion_date": completed_task.completion_date,
+                "is_completed": True
+            })
+            
+    except CompletedTask.DoesNotExist:
+        return JsonResponse({"error": "Task not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

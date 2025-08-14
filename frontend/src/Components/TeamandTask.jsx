@@ -171,55 +171,41 @@ export default function TeamandTask() {
 
   const toggleCheckpoint = async (taskId, checkpointId, completed) => {
     try {
-      await axios.post(
+      // Update checkpoint
+      const response = await axios.post(
         `http://localhost:8000/dashboard/tasks/checkpoints/${checkpointId}/update/`,
         { completed: !completed }
       );
 
-      // Get updated task data
-      const updatedTask = await axios.get(
-        `http://localhost:8000/dashboard/tasks/${taskId}/`
-      );
-
-      // Check if task is now 100% complete
-      if (updatedTask.data.completion_percentage === 100) {
-        try {
-          await axios.post(
-            `http://localhost:8000/dashboard/tasks/${taskId}/mark_completed/`
-          );
-          // Remove from active tasks list
-          setTasks((prev) => prev.filter((task) => task.id !== taskId));
-        } catch (err) {
-          console.error("Error marking task completed:", err);
-        }
-      } else {
-        // Normal update if not 100% complete
-        setTasks((prev) =>
-          prev.map((task) => {
-            if (task.id === taskId) {
-              const updatedCheckpoints = task.checkpoints.map((cp) =>
-                cp.id === checkpointId ? { ...cp, completed: !completed } : cp
-              );
-              const doneCount = updatedCheckpoints.filter(
-                (cp) => cp.completed
-              ).length;
-              const percentage = updatedCheckpoints.length
-                ? Math.round((doneCount / updatedCheckpoints.length) * 100)
-                : 0;
-              return {
-                ...task,
-                checkpoints: updatedCheckpoints,
-                completion_percentage: percentage,
-                completed: percentage === 100,
-              };
-            }
-            return task;
-          })
-        );
+      // Check if this was the final checkpoint that completed the task
+      if (response.data.task_completed) {
+        // Task was completed and deleted - update state accordingly
+        setTasks((prev) => prev.filter((task) => task.id !== taskId));
+        fetchCompletedTasks(); // Refresh completed tasks list
+        return;
       }
+
+      // If task wasn't completed, update the task in state
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                checkpoints: task.checkpoints.map((cp) =>
+                  cp.id === checkpointId ? { ...cp, completed: !completed } : cp
+                ),
+                completed_checkpoints:
+                  response.data.task_status.completed_checkpoints,
+                completion_percentage:
+                  response.data.task_status.completion_percentage,
+                status: response.data.task_status.status,
+              }
+            : task
+        )
+      );
     } catch (err) {
-      console.error(err);
-      setError("Failed to update checkpoint. Please try again.");
+      console.error("Error updating checkpoint:", err);
+      setError(err.response?.data?.error || "Failed to update checkpoint");
     }
   };
 
@@ -264,7 +250,7 @@ export default function TeamandTask() {
   const fetchCompletedTasks = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:8000/dashboard/completed_tasks/"
+        "http://localhost:8000/dashboard/completed-tasks/"
       );
       setCompletedTasks(res.data.completed_tasks);
     } catch (err) {
