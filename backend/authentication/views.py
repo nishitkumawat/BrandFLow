@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from utils.database import MongoService
 import re
-from currentUser import *
+import currentUser
 
 
 @api_view(["POST"])
@@ -16,7 +16,8 @@ def loginUser(request):
     db = MongoService()
     user = db.find("users", {"email": email, "password": password})
     if user:
-        if comapny_name == "":
+        currentUser.email = email
+        if currentUser.comapny_name == "":
             return Response({"message": "Login successful", "user": user[0],"firstLogin":"true"})
         return Response({"message": "Login successful", "user": user[0]})
     else:
@@ -52,5 +53,5 @@ def signupUser(request):
         "email": email,
         "password": password  # plain password, as requested
     })
-
+    currentUser.email = email
     return Response({"message": "Signup successful"})

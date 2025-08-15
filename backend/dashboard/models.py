@@ -6,7 +6,8 @@ class Employee(models.Model):
     experience = models.PositiveIntegerField(default=0)
     joining_date = models.DateField()
     salary = models.PositiveIntegerField()
-    email = models.EmailField(unique=True, default="default@example.com")
+    login_email = models.EmailField(default="default@example.com")  # existing email field 
+    email = models.EmailField(default="default@example.com")  # new field for currentUser.email 
 
     def __str__(self):
         return self.name
@@ -17,6 +18,7 @@ class Team(models.Model):
     description = models.TextField(blank=True)
     lead = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='teams_led', null=True, blank=True)
     members = models.ManyToManyField(Employee, related_name="teams")
+    login_email = models.EmailField(default="default@example.com")  # currentUser.email 
 
     def __str__(self):
         return self.name
@@ -35,6 +37,8 @@ class Task(models.Model):
     total_checkpoints = models.PositiveIntegerField(default=0)
     completed_checkpoints = models.PositiveIntegerField(default=0)
 
+    login_email = models.EmailField(default="default@example.com")  # currentUser.email 
+
     def completion_percentage(self):
         if self.total_checkpoints == 0:
             return 0
@@ -48,6 +52,7 @@ class Checkpoint(models.Model):
     task = models.ForeignKey(Task, related_name="checkpoints", on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     completed = models.BooleanField(default=False)
+    login_email = models.EmailField(default="default@example.com")  # currentUser.email 
 
     def __str__(self):
         return f"{self.title} ({'Completed' if self.completed else 'Pending'})"
@@ -58,6 +63,7 @@ class CompletedTask(models.Model):
     description = models.TextField(blank=True)
     team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
     completion_date = models.DateTimeField(auto_now_add=True)
+    login_email = models.EmailField(default="default@example.com")  # currentUser.email 
 
     def __str__(self):
         return f"Completed: {self.title}"

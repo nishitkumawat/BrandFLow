@@ -7,6 +7,7 @@ import EmployeeManagement from "./Components/EmployeeManagement";
 import CompanyDetials from "./Components/CompanyDetails";
 import Notification from "./Components/Notification";
 import TeamandTask from "./Components/TeamandTask";
+import ClientManagement from "./Components/ClientManagement";
 
 function App() {
   return (
@@ -20,9 +21,10 @@ function App() {
         <Route path="/companyDetails" element={<CompanyDetials />} />
         <Route path="/notification" element={<Notification />} />
         <Route path="/teams" element={<TeamandTask />} />
+        <Route path="/clients" element={<ClientManagement />} />
         {/*<Route path="/documents" element={<Documents />} />
         <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/clients" element={<Clients />} />
+        
         <Route path="/budgeting" element={<Budgeting />} /> */}
       </Routes>
     </Router>
