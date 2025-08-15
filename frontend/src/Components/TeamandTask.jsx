@@ -14,11 +14,13 @@ export default function TeamandTask() {
   const [tasks, setTasks] = useState([]);
   const [teams, setTeams] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [clients, setClients] = useState([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState([]);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
     team_id: "",
+    client_id: "",
   });
   const [newTeam, setNewTeam] = useState({
     name: "",
@@ -61,45 +63,72 @@ export default function TeamandTask() {
     }
   };
 
+  useEffect(() => {
+    console.log("Current clients state:", clients);
+  }, [clients]);
+
+  const fetchClients = async () => {
+    try {
+      console.log("Making API call to fetch clients...");
+      const res = await axios.get("http://localhost:8000/dashboard/clients/");
+      console.log("Clients API response:", res.data);
+      setClients(res.data || []);
+    } catch (err) {
+      console.error("Error fetching clients:", err);
+      setClients([]);
+    }
+  };
   // Main data fetching function
-const fetchData = async () => {
-  setIsLoading(true);
-  try {
-    const res = await axios.get("http://localhost:8000/dashboard/data/");
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      console.log("Starting data fetch...");
 
-    const tasksWithCheckpoints = await Promise.all(
-      (res.data.tasks || []).map(async (task) => {
-        // No need to fetch checkpoints separately now
-        const checkpoints = task.checkpoints || [];
-        const doneCount = checkpoints.filter((cp) => cp.completed).length;
-        const percentage = checkpoints.length
-          ? Math.round((doneCount / checkpoints.length) * 100)
-          : 0;
-        return {
-          ...task,
-          checkpoints,
-          completion_percentage: percentage,
-          completed: percentage === 100,
-        };
-      })
-    );
+      // Fetch both dashboard data and clients separately
+      const [dashboardRes, clientsRes] = await Promise.all([
+        axios.get("http://localhost:8000/dashboard/data/"),
+        axios.get("http://localhost:8000/dashboard/clients/"), // Add this line
+      ]);
 
-    setTasks(tasksWithCheckpoints);
-    setTeams(res.data.teams || []);
-    setEmployees(res.data.employees || []); // Now properly set from response
-    setCompletedTasks(res.data.completed_tasks || []);
-    setError(null);
-  } catch (err) {
-    console.error("Error fetching dashboard data:", err);
-    setError("Failed to load data. Please try again.");
-    setTasks([]);
-    setTeams([]);
-    setEmployees([]);
-    setCompletedTasks([]);
-  } finally {
-    setIsLoading(false);
-  }
-};
+      console.log("Dashboard API response:", dashboardRes.data);
+      console.log("Clients API response:", clientsRes.data);
+
+      // Process tasks with checkpoints (your existing code)
+      const tasksWithCheckpoints = await Promise.all(
+        (dashboardRes.data.tasks || []).map(async (task) => {
+          const checkpoints = await fetchCheckpoints(task.id);
+          const doneCount = checkpoints.filter((cp) => cp.completed).length;
+          const percentage = checkpoints.length
+            ? Math.round((doneCount / checkpoints.length) * 100)
+            : 0;
+          return {
+            ...task,
+            checkpoints,
+            completion_percentage: percentage,
+            completed: percentage === 100,
+          };
+        })
+      );
+
+      // Set all states
+      setTasks(tasksWithCheckpoints);
+      setTeams(dashboardRes.data.teams || []);
+      setEmployees(dashboardRes.data.employees || []);
+      setClients(clientsRes.data || []); // Use the separate clients response
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Failed to load data. Please try again.");
+      // Keep existing data if available
+      setTasks((prev) => (prev.length ? prev : []));
+      setTeams((prev) => (prev.length ? prev : []));
+      setEmployees((prev) => (prev.length ? prev : []));
+      setClients((prev) => (prev.length ? prev : []));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Validate task form
   const validateTask = () => {
     if (!newTask.title.trim()) {
@@ -134,6 +163,7 @@ const fetchData = async () => {
         {
           ...newTask,
           checkpoints: validCheckpoints,
+          client_id: newTask.client_id || null,
         },
         {
           headers: {
@@ -147,13 +177,14 @@ const fetchData = async () => {
         {
           ...res.data.task,
           team__name: teams.find((t) => t.id == newTask.team_id)?.name,
+          client: clients.find((c) => c.id == newTask.client_id),
           checkpoints: res.data.checkpoints || [],
           completion_percentage: 0,
         },
       ]);
 
       // Reset form
-      setNewTask({ title: "", description: "", team_id: "" });
+      setNewTask({ title: "", description: "", team_id: "", client_id: "" });
       setManualCheckpoints([{ title: "" }]);
       setShowCheckpointModal(false);
     } catch (err) {
@@ -280,6 +311,7 @@ const fetchData = async () => {
   useEffect(() => {
     fetchData();
     fetchCompletedTasks();
+    // fetchClients();
   }, []);
 
   return (
@@ -344,6 +376,26 @@ const fetchData = async () => {
                     ))}
                   </select>
 
+                  <select
+                    className="bg-[#1a1f3c] p-2 rounded text-white border border-gray-600 focus:outline-none"
+                    value={newTask.client_id || ""}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, client_id: e.target.value })
+                    }
+                  >
+                    <option value="">No Client</option>
+                    {Array.isArray(clients) && clients.length > 0 ? (
+                      clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name || "Unnamed Client"}
+                          {client.org_name ? ` (${client.org_name})` : ""}
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No clients available</option>
+                    )}
+                  </select>
+
                   <button
                     type="button"
                     onClick={() => setShowCheckpointModal(true)}
@@ -393,6 +445,12 @@ const fetchData = async () => {
                         <p className="text-sm text-gray-400">
                           Team: {task.team__name || "Unassigned"}
                         </p>
+                        <p className="text-sm text-gray-400">
+                          Client: {task.client?.name || "No client"}{" "}
+                          {task.client?.org_name
+                            ? `(${task.client.org_name})`
+                            : ""}
+                        </p>
 
                         {/* Checkpoints List */}
                         <ul className="mt-2 pl-4">
@@ -440,6 +498,7 @@ const fetchData = async () => {
                         <tr className="bg-[#0a0f2b] text-left">
                           <th className="p-3 border border-gray-700">Title</th>
                           <th className="p-3 border border-gray-700">Team</th>
+                          <th className="p-3 border border-gray-700">Client</th>
                           <th className="p-3 border border-gray-700">
                             Completed On
                           </th>
@@ -453,6 +512,12 @@ const fetchData = async () => {
                             </td>
                             <td className="p-3 border border-gray-700">
                               {task.team__name || "Unassigned"}
+                            </td>
+                            <td className="p-3 border border-gray-700">
+                              {task.client?.name || "No client"}{" "}
+                              {task.client?.org_name
+                                ? `(${task.client.org_name})`
+                                : ""}
                             </td>
                             <td className="p-3 border border-gray-700">
                               {task.completed_on

@@ -1,5 +1,22 @@
 from django.db import models
 
+class Client(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    contact_number = models.CharField(max_length=20)
+    org_name = models.CharField(max_length=100)
+    login_email = models.EmailField(default="default@example.com")
+    project = models.ForeignKey(
+        'Task',  # This references the Task model
+        on_delete=models.SET_NULL,  # What happens when the referenced Task is deleted
+        null=True,  # Allows the field to be empty in the database
+        blank=True,  # Allows the field to be empty in forms
+        related_name='clients'  # Name to use for the reverse relation
+    )
+
+    def __str__(self):
+        return f"{self.name} ({self.org_name})"
+    
 class Employee(models.Model):
     name = models.CharField(max_length=100)
     role = models.CharField(max_length=100)
@@ -12,7 +29,6 @@ class Employee(models.Model):
     def __str__(self):
         return self.name
 
-
 class Team(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -23,7 +39,6 @@ class Team(models.Model):
     def __str__(self):
         return self.name
 
-
 class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -33,6 +48,8 @@ class Task(models.Model):
     assigned_to = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True)
     deadline = models.DateField(null=True, blank=True)
     is_moved_to_completed = models.BooleanField(default=False)
+    expense = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # new field
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True)  # new field
 
     total_checkpoints = models.PositiveIntegerField(default=0)
     completed_checkpoints = models.PositiveIntegerField(default=0)
@@ -47,7 +64,6 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
-
 class Checkpoint(models.Model):
     task = models.ForeignKey(Task, related_name="checkpoints", on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
@@ -56,7 +72,6 @@ class Checkpoint(models.Model):
 
     def __str__(self):
         return f"{self.title} ({'Completed' if self.completed else 'Pending'})"
-
 
 class CompletedTask(models.Model):
     title = models.CharField(max_length=200)
