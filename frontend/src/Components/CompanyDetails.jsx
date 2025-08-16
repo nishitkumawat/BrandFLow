@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import Sidebar from "../Components/Sidebar";
@@ -14,8 +14,35 @@ const CompanyPage = () => {
     company_address: "",
   });
 
+  const [companyId, setCompanyId] = useState(null); // ✅ track if editing
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  // ✅ Fetch existing company (assuming 1 company per user/email)
+  useEffect(() => {
+    const fetchCompany = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8000/authentication/company/"
+        );
+        if (response.data && response.data.length > 0) {
+          const company = response.data[0]; // take first (adjust if multiple)
+          setFormData({
+            email: company.email || "",
+            username: company.username || "",
+            company_name: company.company_name || "",
+            phone_no: company.phone_no || "",
+            company_phone_no: company.company_phone_no || "",
+            company_address: company.company_address || "",
+          });
+          setCompanyId(company.id);
+        }
+      } catch (error) {
+        console.error("Failed to fetch company:", error);
+      }
+    };
+    fetchCompany();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,19 +55,22 @@ const CompanyPage = () => {
     setMessage("");
 
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/company/",
-        formData
-      );
-      setMessage("✅ Company data submitted successfully.");
-      setFormData({
-        email: "",
-        username: "",
-        company_name: "",
-        phone_no: "",
-        company_phone_no: "",
-        company_address: "",
-      });
+      if (companyId) {
+        // ✅ Update (PUT)
+        await axios.put(
+          `http://localhost:8000/authentication/company/${companyId}/`,
+          formData
+        );
+        setMessage("✅ Company data updated successfully.");
+      } else {
+        // ✅ Create (POST)
+        const response = await axios.post(
+          "http://localhost:8000/authentication/company/",
+          formData
+        );
+        setMessage("✅ Company data submitted successfully.");
+        setCompanyId(response.data.company_id); // store id after creation
+      }
     } catch (error) {
       setMessage("❌ Failed to submit company data.");
     } finally {
@@ -95,7 +125,7 @@ const CompanyPage = () => {
                 disabled={loading}
                 className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded text-white transition"
               >
-                {loading ? "Submitting..." : "Submit"}
+                {loading ? "Submitting..." : companyId ? "Update" : "Submit"}
               </button>
             </div>
 

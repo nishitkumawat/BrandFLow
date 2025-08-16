@@ -107,7 +107,7 @@ const Sidebar = () => {
             </li>
             <li className="pl-2">
               <Link
-                to="/dashboard/company"
+                to="/company"
                 className="flex items-center gap-2 px-2 py-1 hover:text-blue-400 transition"
               >
                 <Building2 size={16} /> Company Profile
