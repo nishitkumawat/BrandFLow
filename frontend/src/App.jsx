@@ -8,6 +8,8 @@ import CompanyDetials from "./Components/CompanyDetails";
 import Notification from "./Components/Notification";
 import TeamandTask from "./Components/TeamandTask";
 import ClientManagement from "./Components/ClientManagement";
+import Documents from "./Components/Documents";
+import Budget from "./Components/Budget";
 
 function App() {
   return (
@@ -22,10 +24,12 @@ function App() {
         <Route path="/notification" element={<Notification />} />
         <Route path="/teams" element={<TeamandTask />} />
         <Route path="/clients" element={<ClientManagement />} />
-        {/*<Route path="/documents" element={<Documents />} />
+        <Route path="/documents" element={<Documents />} />
+        <Route path="/budgeting" element={<Budget />} />
+        {/*
         <Route path="/calendar" element={<CalendarPage />} />
         
-        <Route path="/budgeting" element={<Budgeting />} /> */}
+         */}
       </Routes>
     </Router>
   );

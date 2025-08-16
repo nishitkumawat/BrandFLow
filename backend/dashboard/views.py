@@ -104,8 +104,8 @@ import currentUser
 # Replace this with your actual logged-in user's email logic
 def get_current_user_email(request):
     # For testing, you can hardcode
-    # return currentUser.email
-    return 'nishit1060@gmail.com'
+    return currentUser.email
+    # return 'nishit1060@gmail.com'
     # In real scenario, use request.user.email or your auth system
 
 @csrf_exempt
@@ -480,3 +480,133 @@ def task_checkpoints(request, task_id):
     return JsonResponse({
         "checkpoints": [model_to_dict(cp) for cp in checkpoints]
     })
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from decimal import Decimal, InvalidOperation
+import json
+from .models import Budget, Employee, Task
+@csrf_exempt
+@require_http_methods(["GET"])
+def budget_summary(request):
+    try:
+        login_email = get_current_user_email(request)
+        
+        if not login_email:
+            return JsonResponse({'error': 'User not authenticated'}, status=401)
+        
+        # Safely handle Budget retrieval and Decimal conversion
+        try:
+            budget = Budget.objects.get(login_email=login_email)
+            total_budget = Decimal(str(budget.total_budget))  # Convert to string first to ensure valid Decimal
+        except Budget.DoesNotExist:
+            total_budget = Decimal('0.00')
+        except Exception as e:
+            print(f"Budget retrieval error: {str(e)}")
+            total_budget = Decimal('0.00')
+        
+        # Safely calculate salaries with Decimal conversion
+        try:
+            salary_agg = Employee.objects.filter(login_email=login_email).aggregate(
+                total_salaries=models.Sum('salary')
+            )
+            salaries = Decimal(str(salary_agg['total_salaries'] or '0.00'))
+        except Exception as e:
+            print(f"Salary calculation error: {str(e)}")
+            salaries = Decimal('0.00')
+        
+        # Safely calculate project expenses with Decimal conversion
+        try:
+            expense_agg = Task.objects.filter(login_email=login_email).aggregate(
+                total_expenses=models.Sum('expense')
+            )
+            project_expenses = Decimal(str(expense_agg['total_expenses'] or '0.00'))
+        except Exception as e:
+            print(f"Expense calculation error: {str(e)}")
+            project_expenses = Decimal('0.00')
+        
+        # Perform calculations with Decimal values
+        total_expenses = salaries + project_expenses
+        remaining = total_budget - total_expenses
+        
+        return JsonResponse({
+            'budget': str(total_budget),
+            'salaries': str(salaries),
+            'project_expenses': str(project_expenses),
+            'total_expenses': str(total_expenses),
+            'remaining': str(remaining),
+        })
+    except Exception as e:
+        print(f"Unexpected error in budget_summary: {str(e)}")
+        return JsonResponse({
+            'error': 'Internal server error',
+            'details': str(e),
+            'type': type(e).__name__
+        }, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def budget_update(request):
+    try:
+        data = json.loads(request.body)
+        login_email = get_current_user_email(request)
+        
+        if not login_email:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+
+        action = data.get('action')
+        if action not in ['increase', 'decrease', 'update']:
+            return JsonResponse({'error': 'Invalid action'}, status=400)
+
+        try:
+            amount = Decimal(str(data.get('amount', '0')))
+            # Validate the number isn't too large for our field
+            if abs(amount.as_tuple().exponent) > 2:
+                return JsonResponse({'error': 'Maximum 2 decimal places allowed'}, status=400)
+            if len(str(amount).replace('.', '').replace('-', '')) > 28:  # Fixed this line
+                return JsonResponse({'error': 'Number too large'}, status=400)
+        except (InvalidOperation, ValueError):
+            return JsonResponse({'error': 'Invalid amount'}, status=400)
+
+        with transaction.atomic():
+            budget, created = Budget.objects.get_or_create(
+                login_email=login_email,
+                defaults={'total_budget': Decimal('0.00')}
+            )
+            
+            current = Decimal(str(budget.total_budget))
+            
+            if action == 'increase':
+                new_amount = current + amount
+            elif action == 'decrease':
+                new_amount = current - amount//2
+            elif action == 'update':
+                new_amount = amount
+
+            # Final validation
+            try:
+                validated = Decimal(str(new_amount))
+                if len(str(validated).replace('.', '').replace('-', '')) > 28:
+                    return JsonResponse({'error': 'Resulting number too large'}, status=400)
+            except InvalidOperation:
+                return JsonResponse({'error': 'Invalid calculation result'}, status=400)
+
+            budget.total_budget = validated
+            budget.save()
+
+            return JsonResponse({
+                'success': True,
+                'new_budget': str(validated),
+                'previous_budget': str(current),
+                'operation': action
+            })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'error': 'Internal server error',
+            'details': str(e)
+        }, status=500)

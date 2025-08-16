@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 
 class Client(models.Model):
@@ -7,37 +8,40 @@ class Client(models.Model):
     org_name = models.CharField(max_length=100)
     login_email = models.EmailField(default="default@example.com")
     project = models.ForeignKey(
-        'Task',  # This references the Task model
-        on_delete=models.SET_NULL,  # What happens when the referenced Task is deleted
-        null=True,  # Allows the field to be empty in the database
-        blank=True,  # Allows the field to be empty in forms
-        related_name='clients'  # Name to use for the reverse relation
+        'Task',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='clients'
     )
 
     def __str__(self):
         return f"{self.name} ({self.org_name})"
     
+
 class Employee(models.Model):
     name = models.CharField(max_length=100)
     role = models.CharField(max_length=100)
     experience = models.PositiveIntegerField(default=0)
     joining_date = models.DateField()
-    salary = models.PositiveIntegerField()
-    login_email = models.EmailField(default="default@example.com")  # existing email field 
-    email = models.EmailField(default="default@example.com")  # new field for currentUser.email 
+    salary = models.PositiveIntegerField(default=0)  # ✅ added default
+    login_email = models.EmailField(default="default@example.com")
+    email = models.EmailField(default="default@example.com")
 
     def __str__(self):
         return self.name
+
 
 class Team(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     lead = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='teams_led', null=True, blank=True)
     members = models.ManyToManyField(Employee, related_name="teams")
-    login_email = models.EmailField(default="default@example.com")  # currentUser.email 
+    login_email = models.EmailField(default="default@example.com")
 
     def __str__(self):
         return self.name
+
 
 class Task(models.Model):
     title = models.CharField(max_length=200)
@@ -48,13 +52,13 @@ class Task(models.Model):
     assigned_to = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True)
     deadline = models.DateField(null=True, blank=True)
     is_moved_to_completed = models.BooleanField(default=False)
-    expense = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # new field
-    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True)  # new field
+    expense = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # ✅ default=0.00
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True)
 
     total_checkpoints = models.PositiveIntegerField(default=0)
     completed_checkpoints = models.PositiveIntegerField(default=0)
 
-    login_email = models.EmailField(default="default@example.com")  # currentUser.email 
+    login_email = models.EmailField(default="default@example.com")
 
     def completion_percentage(self):
         if self.total_checkpoints == 0:
@@ -64,21 +68,32 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
+
 class Checkpoint(models.Model):
     task = models.ForeignKey(Task, related_name="checkpoints", on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     completed = models.BooleanField(default=False)
-    login_email = models.EmailField(default="default@example.com")  # currentUser.email 
+    login_email = models.EmailField(default="default@example.com")
 
     def __str__(self):
         return f"{self.title} ({'Completed' if self.completed else 'Pending'})"
+
 
 class CompletedTask(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
     completion_date = models.DateTimeField(auto_now_add=True)
-    login_email = models.EmailField(default="default@example.com")  # currentUser.email 
+    login_email = models.EmailField(default="default@example.com")
 
     def __str__(self):
         return f"Completed: {self.title}"
+    
+# models.py
+class Budget(models.Model):
+    login_email = models.EmailField()
+    total_budget = models.DecimalField(
+        max_digits=30,  # Increased from likely 12 to handle very large numbers
+        decimal_places=2,
+        default=Decimal('0.00')
+    )

@@ -12,4 +12,6 @@ urlpatterns = [
     path('tasks/checkpoints/<int:checkpoint_id>/update/', views.checkpoint_update),
     path('completed-tasks/', views.completed_tasks_list),
     path('data/', views.task_list_create),  # for fetching all tasks + teams + employees
+    path("budget-summary/", views.budget_summary, name="get_budget_status"),
+    path("budget-update/", views.budget_update, name="update_budget"),
 ]
