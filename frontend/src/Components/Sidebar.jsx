@@ -83,10 +83,10 @@ const Sidebar = () => {
           <ul className="space-y-2">
             <li className="pl-2">
               <Link
-                to="/calendar"
+                to="/marketing"
                 className="flex items-center gap-2 px-2 py-1 hover:text-blue-400 transition"
               >
-                <Calendar size={16} /> Calendar
+                <Calendar size={16} /> Marketing
               </Link>
             </li>
             <li className="pl-2">

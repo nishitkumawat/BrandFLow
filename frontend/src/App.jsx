@@ -10,6 +10,7 @@ import TeamandTask from "./Components/TeamandTask";
 import ClientManagement from "./Components/ClientManagement";
 import Documents from "./Components/Documents";
 import Budget from "./Components/Budget";
+import Marketing from "./Components/Marketing";
 
 function App() {
   return (
@@ -27,7 +28,7 @@ function App() {
         <Route path="/documents" element={<Documents />} />
         <Route path="/budgeting" element={<Budget />} />
         <Route path="/company" element={<CompanyDetials />} />
-
+        <Route path="/marketing" element={<Marketing />} />
         {/*
         <Route path="/calendar" element={<CalendarPage />} />
         

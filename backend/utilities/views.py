@@ -129,3 +129,55 @@ def document_upload_version(request, doc_id):
         "file": version.file.url,
         "uploaded_at": version.uploaded_at
     }, status=201)
+
+from django.http import HttpResponse
+import requests
+from tempfile import NamedTemporaryFile
+import os
+
+CLIPDROP_API_KEY = 'fc4f4e233593d8d5af1cf1b8f80416ad3eadf2006a86348bf4c5e9119049d9134abfc8e47842845bd7708642040eee32'
+CLIPDROP_API_URL = "https://clipdrop-api.co/text-to-image/v1"
+
+import base64
+from django.http import JsonResponse
+
+@csrf_exempt
+def generate_marketing_image(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        # Accept both JSON and form-data
+        if request.content_type == "application/json":
+            body = json.loads(request.body.decode("utf-8"))
+            prompt = body.get("prompt")
+        else:
+            prompt = request.POST.get("prompt")
+    except Exception:
+        prompt = None
+
+    if not prompt:
+        return JsonResponse({'error': 'Prompt is required'}, status=400)
+
+    try:
+        # Call ClipDrop API
+        files = {'prompt': (None, prompt)}
+        headers = {'x-api-key': CLIPDROP_API_KEY}
+        response = requests.post(CLIPDROP_API_URL, files=files, headers=headers)
+        response.raise_for_status()
+
+        # Read response bytes
+        image_bytes = b''.join(response.iter_content(chunk_size=8192))
+
+        # Convert to base64 string
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+        return JsonResponse({
+            "image": image_base64,
+            "caption": f"Generated image for: {prompt}"
+        })
+
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({"error": f"ClipDrop error: {str(e)}"}, status=500)
+    except Exception as e:
+        return JsonResponse({"error": f"Unexpected error: {str(e)}"}, status=500)
