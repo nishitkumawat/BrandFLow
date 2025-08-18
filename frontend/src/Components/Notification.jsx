@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Layout from "../Layout/Layout";
 import { Bell } from "lucide-react";
 import axios from "axios";
+import ScrollBar from "../Components/ScrollBar";
 
 const roles = ["All", "Developer", "Designer", "Manager", "Analyst", "Support"];
 
@@ -43,6 +44,7 @@ const Notification = () => {
 
   return (
     <Layout title="Notification System" icon={Bell}>
+      <ScrollBar />
       <form
         onSubmit={handleSubmit}
         className="bg-[#0a0f2b] border border-gray-700 rounded-xl p-6 grid sm:grid-cols-2 gap-4"

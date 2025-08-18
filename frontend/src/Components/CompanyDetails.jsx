@@ -3,6 +3,8 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import Sidebar from "../Components/Sidebar";
 import { Briefcase } from "lucide-react";
+import ScrollBar from "../Components/ScrollBar";
+
 
 const CompanyPage = () => {
   const [formData, setFormData] = useState({
@@ -80,7 +82,7 @@ const CompanyPage = () => {
 
   return (
     <div className="flex">
-      <Sidebar />
+      <Sidebar /><ScrollBar />
       <div className="ml-64 w-full min-h-screen bg-[#00031c] pt-24 p-6 text-white">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

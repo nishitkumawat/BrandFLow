@@ -14,4 +14,10 @@ urlpatterns = [
     path('data/', views.task_list_create),  # for fetching all tasks + teams + employees
     path("budget-summary/", views.budget_summary, name="get_budget_status"),
     path("budget-update/", views.budget_update, name="update_budget"),
+    
+     path("dashboard/", views.dashboard_summary, name="dashboard-summary"),
+    path("get-clients/", views.get_clients, name="get-clients"),
+    path("get-employees/", views.get_employees, name="get-employees"),
+    path("get-teams/", views.get_teams, name="get-teams"),
+    
 ]

@@ -610,3 +610,71 @@ def budget_update(request):
             'error': 'Internal server error',
             'details': str(e)
         }, status=500)
+        
+        
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from .models import Client, Employee, Team, Task, CompletedTask, Budget
+
+@require_GET
+def dashboard_summary(request):
+    login_email = get_current_user_email(request)
+    if not login_email:
+        return JsonResponse({"error": "login_email is required"}, status=400)
+
+    # Counts
+    clients_count = Client.objects.filter(login_email=login_email).count()
+    employees_count = Employee.objects.filter(login_email=login_email).count()
+    teams_count = Team.objects.filter(login_email=login_email).count()
+    tasks_count = Task.objects.filter(login_email=login_email).count()
+    completed_tasks_count = CompletedTask.objects.filter(login_email=login_email).count()
+
+    # Budget
+    budget = Budget.objects.filter(login_email=login_email).first()
+    total_budget = str(budget.total_budget) if budget else "0.00"
+
+    # Task details (with % completion)
+    tasks = list(Task.objects.filter(login_email=login_email).values(
+        "id", "title", "description", "status", "completed",
+        "deadline", "expense", "total_checkpoints", "completed_checkpoints"
+    ))
+
+    # Add percentage calculation manually
+    for t in tasks:
+        total = t["total_checkpoints"] or 0
+        done = t["completed_checkpoints"] or 0
+        t["completion_percentage"] = int((done / total) * 100) if total > 0 else 0
+
+    print(clients_count,employees_count,teams_count,tasks_count,completed_tasks_count,total_budget,tasks)
+
+    return JsonResponse({
+    "employees": employees_count,
+    "clients": clients_count,
+    "tasks": tasks_count,
+    "teams": teams_count,  # or whatever makes sense
+    "emails": 0,  # add if needed
+    "budget": total_budget,
+    "completed_tasks":completed_tasks_count,
+    "tasks_list": tasks }, safe=False)
+
+
+@require_GET
+def get_clients(request):
+    login_email = get_current_user_email(request)
+    clients = list(Client.objects.filter(login_email=login_email).values())
+    return JsonResponse(clients, safe=False)
+
+
+@require_GET
+def get_employees(request):
+    login_email = get_current_user_email(request)
+    employees = list(Employee.objects.filter(login_email=login_email).values())
+    return JsonResponse(employees, safe=False)
+
+
+@require_GET
+def get_teams(request):
+    login_email = get_current_user_email(request)
+    teams = list(Team.objects.filter(login_email=login_email).values("id", "name", "description"))
+    return JsonResponse(teams, safe=False)
+

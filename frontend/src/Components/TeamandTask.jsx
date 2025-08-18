@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import Sidebar from "../Components/Sidebar";
 import { ListTodo, Users, PlusCircle, X } from "lucide-react";
+import ScrollBar from "../Components/ScrollBar";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -317,6 +318,7 @@ export default function TeamandTask() {
   return (
     <div className="flex">
       <Sidebar />
+      <ScrollBar />
       <div className="ml-64 w-full min-h-screen bg-[#00031c] pt-24 p-6 text-white">
         <motion.div initial="hidden" animate="show" variants={fadeInUp}>
           {error && (

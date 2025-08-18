@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import Sidebar from "../Components/Sidebar";
+import ScrollBar from "../Components/ScrollBar";
 import {
   PlusCircle,
   MinusCircle,
@@ -68,7 +69,7 @@ const Budget = () => {
 
   return (
     <div className="flex">
-      <Sidebar />
+      <Sidebar /><ScrollBar />
       <div className="ml-64 w-full min-h-screen bg-[#00031c] pt-24 p-6 text-white">
         <motion.div initial="hidden" animate="show" variants={fadeInUp}>
           {/* Page Title */}

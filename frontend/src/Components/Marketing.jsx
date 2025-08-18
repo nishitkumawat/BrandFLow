@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import Sidebar from "../Components/Sidebar";
 import { Image, Download, Copy, Sparkles } from "lucide-react";
+import ScrollBar from "../Components/ScrollBar";
 
 const API_BASE = "http://127.0.0.1:8000"; // backend API base
 
@@ -71,7 +72,7 @@ export default function Marketing() {
 
   return (
     <div className="flex">
-      <Sidebar />
+      <Sidebar /><ScrollBar />
       <div className="ml-64 w-full min-h-screen bg-[#00031c] pt-24 p-6 text-white">
         <motion.div initial="hidden" animate="show" variants={fadeInUp}>
           {/* Header */}
