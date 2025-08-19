@@ -678,3 +678,160 @@ def get_teams(request):
     teams = list(Team.objects.filter(login_email=login_email).values("id", "name", "description"))
     return JsonResponse(teams, safe=False)
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+import requests
+from django.conf import settings
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+@api_view(["POST"])
+def generate_ai_checkpoints_preview(request):
+    title = request.data.get("title", "")
+    description = request.data.get("description", "")
+    
+    if not title:
+        return Response({"error": "Title is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Get API key from environment
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or getattr(settings, 'GEMINI_API_KEY', None)
+    
+    if not GEMINI_API_KEY:
+        return Response({
+            "error": "API configuration error. Please contact support."
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    try:
+        # Create prompt for generating checkpoints
+        prompt = f"""
+        As a project management AI assistant, generate exactly 10 clear, actionable checkpoints 
+        for the following task. Return ONLY a numbered list of checkpoints without any additional text.
+        
+        Task Title: {title}
+        Task Description: {description}
+        
+        The checkpoints should be:
+        1. Specific and measurable
+        2. Action-oriented
+        3. Sequential (logical order)
+        4. Relevant to the task
+        5. Concise but descriptive
+        
+        Generate exactly 10 checkpoints:
+        """
+        
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        headers = {
+            "Content-Type": "application/json"
+        }
+        params = {
+            "key": GEMINI_API_KEY
+        }
+        data = {
+            "contents": [
+                {
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.3,
+                "topK": 20,
+                "topP": 0.9,
+                "maxOutputTokens": 1024,
+            }
+        }
+
+        response = requests.post(url, headers=headers, params=params, json=data)
+        response.raise_for_status()
+
+        # Extract the response text
+        response_data = response.json()
+        
+        if "candidates" in response_data and response_data["candidates"]:
+            candidate = response_data["candidates"][0]
+            if "content" in candidate and "parts" in candidate["content"]:
+                ai_response = candidate["content"]["parts"][0]["text"]
+                
+                # Parse the AI response into individual checkpoints
+                checkpoints = parse_checkpoints(ai_response)
+                
+                # If we got less than 10 checkpoints, fill in generic ones
+                while len(checkpoints) < 10:
+                    checkpoints.append(f"Checkpoint {len(checkpoints) + 1}: Complete this phase")
+                
+                # Limit to exactly 10 checkpoints
+                checkpoints = checkpoints[:10]
+                
+                return Response({
+                    "checkpoints": checkpoints,
+                    "ai_generated": True
+                }, status=status.HTTP_200_OK)
+        
+        # Fallback if AI response parsing fails
+        default_checkpoints = generate_default_checkpoints(title)
+        return Response({
+            "checkpoints": default_checkpoints,
+            "ai_generated": False
+        }, status=status.HTTP_200_OK)
+
+    except requests.exceptions.RequestException as e:
+        print("AI API error:", str(e))
+        # Return default checkpoints if AI fails
+        default_checkpoints = generate_default_checkpoints(title)
+        return Response({
+            "checkpoints": default_checkpoints,
+            "ai_generated": False,
+            "error": "AI generation failed, using default checkpoints"
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        print("Unexpected error:", str(e))
+        default_checkpoints = generate_default_checkpoints(title)
+        return Response({
+            "checkpoints": default_checkpoints,
+            "ai_generated": False,
+            "error": "Unexpected error, using default checkpoints"
+        }, status=status.HTTP_200_OK)
+
+
+def parse_checkpoints(ai_response):
+    """Parse AI response into individual checkpoints"""
+    checkpoints = []
+    lines = ai_response.strip().split('\n')
+    
+    for line in lines:
+        line = line.strip()
+        if line and any(char.isdigit() for char in line) and ('.' in line or ':' in line or ')' in line):
+            # Remove numbering (1., 2), etc.)
+            if '. ' in line:
+                checkpoint = line.split('. ', 1)[1]
+            elif ') ' in line:
+                checkpoint = line.split(') ', 1)[1]
+            elif ': ' in line:
+                checkpoint = line.split(': ', 1)[1]
+            else:
+                checkpoint = line
+            
+            checkpoints.append(checkpoint)
+    
+    return checkpoints if checkpoints else generate_default_checkpoints("Task")
+
+
+def generate_default_checkpoints(title):
+    """Generate default checkpoints if AI fails"""
+    return [
+        f"Research and gather information about {title}",
+        f"Define scope and requirements for {title}",
+        f"Create initial plan and timeline for {title}",
+        f"Develop first draft/prototype of {title}",
+        f"Review and get feedback on {title}",
+        f"Implement changes based on feedback for {title}",
+        f"Test and validate {title} deliverables",
+        f"Finalize and prepare {title} for completion",
+        f"Document results and learnings from {title}",
+        f"Complete final review and submit {title}"
+    ]

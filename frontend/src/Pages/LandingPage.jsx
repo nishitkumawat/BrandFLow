@@ -6,6 +6,7 @@ import { Sparkles, ArrowRight, ArrowUp } from "lucide-react";
 import Scrollbar from "../Components/ScrollBar";
 import axios from "axios";
 import bgImage from "../assets/background.png"; // adjust path as per your folder structure
+import dashboardimage from "../assets/img1.png";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -86,7 +87,7 @@ const LandingPage = () => {
             />
             <div className="relative flex items-center justify-center">
               <div className="absolute w-32 h-32 bg-blue-500 blur-3xl rounded-full opacity-50 z-[-1]" />
-              <p className="relative z-10">A.I Driven</p>
+              <p className="relative z-10">BrandFLow</p>
             </div>
             <img
               src="https://wpriverthemes.com/nexux/wp-content/themes/nexux/icons/sub-title-right.svg"
@@ -99,7 +100,7 @@ const LandingPage = () => {
             className="text-white text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
             variants={fadeInUp}
           >
-            Transform Your Business <br />
+            Manage Your Business <br />
             with AI-Powered Solutions
           </motion.h1>
 
@@ -108,8 +109,28 @@ const LandingPage = () => {
             variants={fadeInUp}
           >
             <Sparkles className="text-blue-500 animate-pulse" size={20} />
-            Our AI platform automates repetitive tasks
+            Our Interactive Layout for the Users
           </motion.p>
+        </motion.div>
+        <motion.div
+          className="mt-8 mb-16 md:mb-24 flex justify-center px-4 sm:px-8 lg:px-12"
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeInUp}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          <div className="relative w-full max-w-2xl md:max-w-4xl lg:max-w-6xl rounded-2xl overflow-hidden border border-blue-400/30 shadow-[0_0_25px_5px_rgba(100,150,255,0.15)]">
+            <img
+              src={dashboardimage}
+              alt="Our AI content creation platform"
+              className="w-full h-auto object-cover"
+            />
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{ boxShadow: "inset 0 0 25px rgba(100, 180, 255, 0.2)" }}
+            ></div>
+          </div>
         </motion.div>
       </div>
       {/* About Section */}
@@ -122,7 +143,7 @@ const LandingPage = () => {
         variants={staggerContainer}
       >
         <motion.div
-          className="relative flex justify-center items-center gap-2 text-sm text-gray-400 mb-4"
+          className="relative flex justify-center items-center gap-2 text-sm text-gray-400 mb-4 pt-24"
           variants={fadeInUp}
         >
           <img
@@ -239,11 +260,11 @@ const LandingPage = () => {
           {[
             {
               title: "How does the AI generate content?",
-              desc: "Our platform uses open-source models trained on marketing content to generate tailored outputs.",
+              desc: "Our platform uses gemini and other models trained on marketing content to generate tailored outputs.",
             },
             {
               title: "Can I customize the tone and style?",
-              desc: "Yes, you can choose different tones like professional, friendly, bold, and more.",
+              desc: "Yes, you can choose different tones like manager, marketing, developer, and more.",
             },
             {
               title: "What happens when I run out of credits?",

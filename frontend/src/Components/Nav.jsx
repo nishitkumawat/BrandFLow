@@ -88,42 +88,7 @@ const Nav = () => {
             ))}
 
             {/* Dropdown */}
-            <div className="relative group">
-              <button className="relative text-gray-400 hover:text-white group transition duration-300">
-                <span>All Pages</span>
-                <span
-                  className="absolute left-1/2 -bottom-1 w-0 h-[2px] 
-                    group-hover:w-full group-hover:left-0 group-hover:opacity-100 
-                    opacity-0 transition-all duration-300"
-                  style={{
-                    background:
-                      "radial-gradient(ellipse at center, #3b82f6 0%, #3b82f6aa 40%, transparent 80%)",
-                    borderRadius: "9999px",
-                  }}
-                ></span>
-              </button>
-              <div className="absolute top-full mt-2 w-40 bg-[#00031c]/70 border border-gray-700 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none group-hover:pointer-events-auto backdrop-blur">
-                {["Blog", "Contact"].map((label, index) => (
-                  <a
-                    key={index}
-                    href="#"
-                    className="block px-4 py-2 text-gray-400 hover:text-white relative group transition"
-                  >
-                    <span>{label}</span>
-                    <span
-                      className="absolute left-1/2 -bottom-1 w-0 h-[2px] 
-                        group-hover:w-full group-hover:left-0 group-hover:opacity-100 
-                        opacity-0 transition-all duration-300"
-                      style={{
-                        background:
-                          "radial-gradient(ellipse at center, #3b82f6 0%, #3b82f6aa 40%, transparent 80%)",
-                        borderRadius: "9999px",
-                      }}
-                    ></span>
-                  </a>
-                ))}
-              </div>
-            </div>
+            
           </nav>
 
           {/* Right Side */}

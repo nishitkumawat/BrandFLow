@@ -1,4 +1,5 @@
 import React from "react";
+import logo from "../assets/logo.png"; // adjust path if needed
 
 const Footer = () => {
   return (
@@ -6,12 +7,15 @@ const Footer = () => {
       <div className="flex flex-col md:flex-row justify-between w-full gap-10 border-b border-gray-700 pb-10">
         {/* Logo and Description */}
         <div className="md:max-w-96">
-          <img className="w-36 h-auto invert" src="logo.png" alt="BrandFlow" />
+          <img className="w-12 h-auto" src={logo} alt="BrandFlow" />
           <p className="mt-6 text-sm">
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptate
-            doloremque commodi excepturi nesciunt eaque ex. Quia qui inventore
-            minima ratione deleniti aperiam at quas ea sequi, exercitationem
-            sint amet saepe?
+            BrandFlow revolutionizes how businesses create compelling content
+            through artificial intelligence. Our platform empowers marketers,
+            entrepreneurs, and creators to generate high-quality, engaging
+            content in minutes instead of hours. With advanced AI trained on
+            successful marketing campaigns across industries, BrandFlow
+            understands what resonates with audiences and helps you craft
+            messages that convert.
           </p>
         </div>
 

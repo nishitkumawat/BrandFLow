@@ -421,7 +421,7 @@ export default function TeamandTask() {
                   </button>
                 </form>
 
-                <ul className="mb-6 grid sm:grid-cols-1 gap-4">
+                <ul className="mb-6 mt-6 grid sm:grid-cols-1 gap-4">
                   {tasks.length > 0 ? (
                     tasks.map((task) => (
                       <div

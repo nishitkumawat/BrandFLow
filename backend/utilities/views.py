@@ -12,6 +12,15 @@ from django.views.decorators.http import require_http_methods
 import json
 from .models import *
 import currentUser
+from dotenv import load_dotenv
+import os
+from django.http import HttpResponse
+import requests
+from tempfile import NamedTemporaryFile
+
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Replace this with your actual logged-in user's email logic
 def get_current_user_email(request):
@@ -130,12 +139,9 @@ def document_upload_version(request, doc_id):
         "uploaded_at": version.uploaded_at
     }, status=201)
 
-from django.http import HttpResponse
-import requests
-from tempfile import NamedTemporaryFile
-import os
 
-CLIPDROP_API_KEY = 'fc4f4e233593d8d5af1cf1b8f80416ad3eadf2006a86348bf4c5e9119049d9134abfc8e47842845bd7708642040eee32'
+
+CLIPDROP_API_KEY = os.getenv('CLIPDROP_API_KEY')
 CLIPDROP_API_URL = "https://clipdrop-api.co/text-to-image/v1"
 
 import base64
