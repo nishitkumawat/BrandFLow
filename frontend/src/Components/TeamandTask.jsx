@@ -64,21 +64,6 @@ export default function TeamandTask() {
     }
   };
 
-  useEffect(() => {
-    console.log("Current clients state:", clients);
-  }, [clients]);
-
-  const fetchClients = async () => {
-    try {
-      console.log("Making API call to fetch clients...");
-      const res = await axios.get("http://localhost:8000/dashboard/clients/");
-      console.log("Clients API response:", res.data);
-      setClients(res.data || []);
-    } catch (err) {
-      console.error("Error fetching clients:", err);
-      setClients([]);
-    }
-  };
   // Main data fetching function
   const fetchData = async () => {
     setIsLoading(true);
@@ -88,13 +73,13 @@ export default function TeamandTask() {
       // Fetch both dashboard data and clients separately
       const [dashboardRes, clientsRes] = await Promise.all([
         axios.get("http://localhost:8000/dashboard/data/"),
-        axios.get("http://localhost:8000/dashboard/clients/"), // Add this line
+        axios.get("http://localhost:8000/dashboard/clients/"),
       ]);
 
       console.log("Dashboard API response:", dashboardRes.data);
       console.log("Clients API response:", clientsRes.data);
 
-      // Process tasks with checkpoints (your existing code)
+      // Process tasks with checkpoints
       const tasksWithCheckpoints = await Promise.all(
         (dashboardRes.data.tasks || []).map(async (task) => {
           const checkpoints = await fetchCheckpoints(task.id);
@@ -115,7 +100,7 @@ export default function TeamandTask() {
       setTasks(tasksWithCheckpoints);
       setTeams(dashboardRes.data.teams || []);
       setEmployees(dashboardRes.data.employees || []);
-      setClients(clientsRes.data || []); // Use the separate clients response
+      setClients(clientsRes.data || []);
       setError(null);
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -138,6 +123,15 @@ export default function TeamandTask() {
     if (!newTask.team_id) {
       return "Please select a team";
     }
+
+    // Validate checkpoints
+    const validCheckpoints = manualCheckpoints.filter(
+      (cp) => cp.title.trim() !== ""
+    );
+    if (validCheckpoints.length === 0) {
+      return "At least one checkpoint is required";
+    }
+
     return null;
   };
 
@@ -280,7 +274,7 @@ export default function TeamandTask() {
           description: newTask.description,
         }
       );
-      setManualCheckpoints(res.data.checkpoints);
+      setManualCheckpoints(res.data.checkpoints.map((title) => ({ title })));
     } catch (err) {
       console.error("Error generating checkpoints:", err);
       setError("Failed to generate checkpoints. Please try again.");
@@ -308,11 +302,26 @@ export default function TeamandTask() {
     setManualCheckpoints(newCheckpoints);
   };
 
+  // Save checkpoints and close modal
+  const saveCheckpoints = () => {
+    // Filter out empty checkpoints
+    const validCheckpoints = manualCheckpoints.filter(
+      (cp) => cp.title.trim() !== ""
+    );
+
+    if (validCheckpoints.length === 0) {
+      setError("Please add at least one checkpoint");
+      return;
+    }
+
+    setManualCheckpoints(validCheckpoints);
+    setShowCheckpointModal(false);
+  };
+
   // Fetch data on component mount
   useEffect(() => {
     fetchData();
     fetchCompletedTasks();
-    // fetchClients();
   }, []);
 
   return (
@@ -324,6 +333,12 @@ export default function TeamandTask() {
           {error && (
             <div className="bg-red-600 text-white p-3 rounded mb-4">
               {error}
+              <button
+                className="float-right text-sm"
+                onClick={() => setError(null)}
+              >
+                <X size={16} />
+              </button>
             </div>
           )}
 
@@ -403,7 +418,14 @@ export default function TeamandTask() {
                     onClick={() => setShowCheckpointModal(true)}
                     className="bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition flex items-center justify-center gap-2"
                   >
-                    Add/Generate Checkpoints
+                    {manualCheckpoints.filter((cp) => cp.title.trim() !== "")
+                      .length > 0
+                      ? `Edit Checkpoints (${
+                          manualCheckpoints.filter(
+                            (cp) => cp.title.trim() !== ""
+                          ).length
+                        })`
+                      : "Add/Generate Checkpoints"}
                   </button>
 
                   <button
@@ -448,9 +470,15 @@ export default function TeamandTask() {
                           Team: {task.team__name || "Unassigned"}
                         </p>
                         <p className="text-sm text-gray-400">
-                          Client: {task.client?.name || "No client"}{" "}
-                          {task.client?.org_name
-                            ? `(${task.client.org_name})`
+                          Client:{" "}
+                          {task.client_name ||
+                            (task.client && task.client.name) ||
+                            "No client"}{" "}
+                          {task.client_org_name ||
+                          (task.client && task.client.org_name)
+                            ? `(${
+                                task.client_org_name || task.client.org_name
+                              })`
                             : ""}
                         </p>
 
@@ -500,7 +528,6 @@ export default function TeamandTask() {
                         <tr className="bg-[#0a0f2b] text-left">
                           <th className="p-3 border border-gray-700">Title</th>
                           <th className="p-3 border border-gray-700">Team</th>
-                          <th className="p-3 border border-gray-700">Client</th>
                           <th className="p-3 border border-gray-700">
                             Completed On
                           </th>
@@ -514,12 +541,6 @@ export default function TeamandTask() {
                             </td>
                             <td className="p-3 border border-gray-700">
                               {task.team__name || "Unassigned"}
-                            </td>
-                            <td className="p-3 border border-gray-700">
-                              {task.client?.name || "No client"}{" "}
-                              {task.client?.org_name
-                                ? `(${task.client.org_name})`
-                                : ""}
                             </td>
                             <td className="p-3 border border-gray-700">
                               {task.completed_on
@@ -720,7 +741,12 @@ export default function TeamandTask() {
               </div>
               <div className="max-h-96 overflow-y-auto">
                 <h3 className="font-medium mb-2">
-                  Checkpoints ({manualCheckpoints.length})
+                  Checkpoints (
+                  {
+                    manualCheckpoints.filter((cp) => cp.title.trim() !== "")
+                      .length
+                  }
+                  )
                 </h3>
                 {manualCheckpoints.length === 0 ? (
                   <div className="text-center py-4 text-gray-400">
@@ -771,7 +797,7 @@ export default function TeamandTask() {
                 </button>
                 <button
                   className="bg-green-600 text-white px-4 py-2 rounded"
-                  onClick={() => setShowCheckpointModal(false)}
+                  onClick={saveCheckpoints}
                 >
                   Save Checkpoints
                 </button>

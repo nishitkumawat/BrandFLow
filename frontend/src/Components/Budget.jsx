@@ -69,7 +69,8 @@ const Budget = () => {
 
   return (
     <div className="flex">
-      <Sidebar /><ScrollBar />
+      <Sidebar />
+      <ScrollBar />
       <div className="ml-64 w-full min-h-screen bg-[#00031c] pt-24 p-6 text-white">
         <motion.div initial="hidden" animate="show" variants={fadeInUp}>
           {/* Page Title */}
@@ -119,7 +120,7 @@ const Budget = () => {
               {isSubmitting ? (
                 <Loader2 className="animate-spin" size={18} />
               ) : (
-                <DollarSign size={18} />
+                "₹ "
               )}
               Update
             </button>
@@ -164,7 +165,6 @@ const Budget = () => {
               (summary.remaining || 0) < 0 ? "bg-red-600" : "bg-green-600"
             }`}
           >
-            <DollarSign />
             Remaining: ₹{summary.remaining || 0}
           </div>
         </motion.div>

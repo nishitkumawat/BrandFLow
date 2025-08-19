@@ -84,10 +84,15 @@ class CompletedTask(models.Model):
     description = models.TextField(blank=True)
     team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
     completion_date = models.DateTimeField(auto_now_add=True)
+    expense = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )  # ✅ Added expense field
     login_email = models.EmailField(default="default@example.com")
 
     def __str__(self):
-        return f"Completed: {self.title}"
+        return f"Completed: {self.title} (Expense: {self.expense})"
     
 # models.py
 class Budget(models.Model):

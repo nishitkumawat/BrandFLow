@@ -1,15 +1,35 @@
 from datetime import timezone
+from decimal import Decimal, InvalidOperation
+import json
+import os
+import requests
+
+from django.conf import settings
 from django.core.mail import send_mail, BadHeaderError, EmailMessage
+from django.db import transaction
+from django.forms.models import model_to_dict
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_GET
+from django.db.models import Sum
+
+
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-import json
-from .models import *
-from django.db import transaction
+
+from dotenv import load_dotenv
+
+from .models import (
+    Employee, Team, Task, Checkpoint,
+    CompletedTask, Budget, Client
+)
+
 import currentUser
+
+
+# Load environment variables
+load_dotenv()
 
   
 # BULK EMAIL
@@ -93,13 +113,6 @@ def send_notification(request):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.forms.models import model_to_dict
-from .models import Employee
-import currentUser
 
 # Replace this with your actual logged-in user's email logic
 def get_current_user_email(request):
@@ -152,12 +165,6 @@ def employee_list_create(request):
             )
             return JsonResponse(model_to_dict(emp))
 
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.forms.models import model_to_dict
-from .models import Employee, Team, Task, Checkpoint, CompletedTask
 
 # -------------------- Teams --------------------
 @csrf_exempt
@@ -208,11 +215,15 @@ def task_list_create(request):
         task_data = []
         for task in tasks:
             checkpoints = Checkpoint.objects.filter(task=task, login_email=current_email)
+            client_data = None
+            if task.client:
+                client_data = model_to_dict(task.client)
             task_data.append({
                 **model_to_dict(task),
                 "checkpoints": [model_to_dict(cp) for cp in checkpoints],
                 "completion_percentage": task.completion_percentage(),
-                "team__name": task.team.name if task.team else None
+                "team__name": task.team.name if task.team else None,
+                 "client": client_data 
             })
         
         # Process teams with members
@@ -319,13 +330,24 @@ def checkpoint_update(request, checkpoint_id):
     })
 
 
-# -------------------- Completed Tasks --------------------
 @csrf_exempt
 @require_http_methods(["GET"])
 def completed_tasks_list(request):
     current_email = get_current_user_email(request)
-    completed_tasks = CompletedTask.objects.filter(login_email=current_email)
-    data = [model_to_dict(task) for task in completed_tasks]
+    completed_tasks = CompletedTask.objects.filter(
+        login_email=current_email
+    ).select_related('team')
+    
+    data = []
+    for task in completed_tasks:
+        data.append({
+            'id': task.id,
+            'title': task.title,
+            'description': task.description,
+            'team__name': task.team.name if task.team else "Unassigned",
+            'completed_on': task.completion_date.isoformat() if task.completion_date else None,
+        })
+    
     return JsonResponse({"completed_tasks": data})
 
 
@@ -482,12 +504,10 @@ def task_checkpoints(request, task_id):
     })
 
 
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
-from decimal import Decimal, InvalidOperation
-import json
-from .models import Budget, Employee, Task
+
+from django.db.models import Sum
+from decimal import Decimal
+
 @csrf_exempt
 @require_http_methods(["GET"])
 def budget_summary(request):
@@ -497,34 +517,47 @@ def budget_summary(request):
         if not login_email:
             return JsonResponse({'error': 'User not authenticated'}, status=401)
         
-        # Safely handle Budget retrieval and Decimal conversion
+        # Safely handle Budget retrieval
         try:
             budget = Budget.objects.get(login_email=login_email)
-            total_budget = Decimal(str(budget.total_budget))  # Convert to string first to ensure valid Decimal
+            total_budget = budget.total_budget
         except Budget.DoesNotExist:
             total_budget = Decimal('0.00')
         except Exception as e:
             print(f"Budget retrieval error: {str(e)}")
             total_budget = Decimal('0.00')
         
-        # Safely calculate salaries with Decimal conversion
+        # Calculate salaries
         try:
             salary_agg = Employee.objects.filter(login_email=login_email).aggregate(
-                total_salaries=models.Sum('salary')
+                total_salaries=Sum('salary')
             )
-            salaries = Decimal(str(salary_agg['total_salaries'] or '0.00'))
+            salaries = salary_agg['total_salaries'] or Decimal('0.00')
+            if not isinstance(salaries, Decimal):
+                salaries = Decimal(str(salaries))
         except Exception as e:
             print(f"Salary calculation error: {str(e)}")
             salaries = Decimal('0.00')
         
-        # Safely calculate project expenses with Decimal conversion
+        # Calculate total project expenses (both active and completed tasks)
         try:
+         # Active tasks expenses
             expense_agg = Task.objects.filter(login_email=login_email).aggregate(
-                total_expenses=models.Sum('expense')
+                total_expenses=Sum('expense')
             )
-            project_expenses = Decimal(str(expense_agg['total_expenses'] or '0.00'))
+            task_expenses = expense_agg['total_expenses'] or Decimal('0.00')
+
+            # Completed tasks expenses
+            c_agg = CompletedTask.objects.filter(login_email=login_email).aggregate(
+                total_expenses=Sum('expense')
+            )
+            completed_expenses = c_agg['total_expenses'] or Decimal('0.00')
+
+            # Ensure both are Decimal before summing
+            project_expenses = Decimal(str(task_expenses)) + Decimal(str(completed_expenses))
+
         except Exception as e:
-            print(f"Expense calculation error: {str(e)}")
+            print(f"Project expense calculation error: {str(e)}")
             project_expenses = Decimal('0.00')
         
         # Perform calculations with Decimal values
@@ -534,7 +567,7 @@ def budget_summary(request):
         return JsonResponse({
             'budget': str(total_budget),
             'salaries': str(salaries),
-            'project_expenses': str(project_expenses),
+            'project_expenses': str(project_expenses),  # Combined active + completed
             'total_expenses': str(total_expenses),
             'remaining': str(remaining),
         })
@@ -545,7 +578,7 @@ def budget_summary(request):
             'details': str(e),
             'type': type(e).__name__
         }, status=500)
-
+        
 @csrf_exempt
 @require_http_methods(["POST"])
 def budget_update(request):
@@ -611,10 +644,6 @@ def budget_update(request):
             'details': str(e)
         }, status=500)
         
-        
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-from .models import Client, Employee, Team, Task, CompletedTask, Budget
 
 @require_GET
 def dashboard_summary(request):
@@ -678,16 +707,7 @@ def get_teams(request):
     teams = list(Team.objects.filter(login_email=login_email).values("id", "name", "description"))
     return JsonResponse(teams, safe=False)
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-import requests
-from django.conf import settings
-import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
 
 @api_view(["POST"])
 def generate_ai_checkpoints_preview(request):
