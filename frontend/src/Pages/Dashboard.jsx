@@ -47,10 +47,10 @@ const Dashboard = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+    // if (!token) {
+    //   navigate("/login");
+    //   return;
+    // }
 
     const fetchDashboardData = async () => {
       try {

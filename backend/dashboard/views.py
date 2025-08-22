@@ -200,12 +200,12 @@ def team_list_create(request):
         team.members.set(members)
         return JsonResponse({"id": team.id})
 @csrf_exempt
-@require_http_methods(["GET", "POST"])  # Changed to allow both GET and POST
+@require_http_methods(["GET", "POST"])  # Allow both GET and POST
 def task_list_create(request):
     current_email = get_current_user_email(request)
     
     if request.method == "GET":
-        # Your existing GET handling code
+        # Fetch data
         tasks = Task.objects.filter(login_email=current_email)
         teams = Team.objects.filter(login_email=current_email)
         employees = Employee.objects.filter(login_email=current_email)
@@ -215,15 +215,19 @@ def task_list_create(request):
         task_data = []
         for task in tasks:
             checkpoints = Checkpoint.objects.filter(task=task, login_email=current_email)
+            
+            # Include client details if linked
             client_data = None
             if task.client:
                 client_data = model_to_dict(task.client)
+            
             task_data.append({
                 **model_to_dict(task),
+                "expense": str(task.expense or 0.00),  # always return expense
                 "checkpoints": [model_to_dict(cp) for cp in checkpoints],
                 "completion_percentage": task.completion_percentage(),
                 "team__name": task.team.name if task.team else None,
-                 "client": client_data 
+                "client": client_data
             })
         
         # Process teams with members
@@ -260,14 +264,30 @@ def task_list_create(request):
                 if not team:
                     return JsonResponse({"error": "Team not found"}, status=404)
             
-            # Create the task
+            # Create the task with expense default = 0
             task = Task.objects.create(
                 title=data['title'],
                 description=data.get('description', ''),
                 team=team,
                 login_email=current_email,
-                total_checkpoints=len(data.get('checkpoints', []))
+                total_checkpoints=len(data.get('checkpoints', [])),
+                expense=data.get('expense', 0.00)  # ✅ expense default = 0
             )
+            
+            # Link client to this task
+            client = None
+            if data.get('client_id'):
+                client = Client.objects.filter(
+                    id=data['client_id'],
+                    login_email=current_email
+                ).first()
+                if client:
+                    client.project = task
+                    client.save()
+                    task.client = client   # ✅ add client to Task also
+                    task.save()
+                else:
+                    return JsonResponse({"error": "Client not found"}, status=404)
             
             # Create checkpoints
             checkpoints = []
@@ -281,7 +301,11 @@ def task_list_create(request):
                     checkpoints.append(model_to_dict(checkpoint))
             
             return JsonResponse({
-                "task": model_to_dict(task),
+                "task": {
+                    **model_to_dict(task),
+                    "expense": str(task.expense or 0.00),
+                    "client": model_to_dict(client) if client else None
+                },
                 "checkpoints": checkpoints
             }, status=201)
             
@@ -289,7 +313,7 @@ def task_list_create(request):
             return JsonResponse({"error": "Invalid JSON"}, status=400)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
-        
+   
 # -------------------- Checkpoints --------------------
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -314,7 +338,8 @@ def checkpoint_update(request, checkpoint_id):
             title=task.title,
             description=task.description,
             team=task.team,
-            login_email=current_email
+            login_email=current_email,
+            expense=task.expense
         )
         task.delete()
         return JsonResponse({"task_completed": True})
@@ -365,6 +390,8 @@ def client_management(request):
                 'email': client.email,
                 'contact_number': client.contact_number,
                 'org_name': client.org_name,
+                'project': client.project.title if client.project else None
+
             } for client in clients]
             return JsonResponse(clients_data, safe=False)
         

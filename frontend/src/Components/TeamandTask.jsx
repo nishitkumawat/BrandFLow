@@ -22,6 +22,7 @@ export default function TeamandTask() {
     description: "",
     team_id: "",
     client_id: "",
+    expense: "",
   });
   const [newTeam, setNewTeam] = useState({
     name: "",
@@ -377,6 +378,17 @@ export default function TeamandTask() {
                       setNewTask({ ...newTask, description: e.target.value })
                     }
                   />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="bg-[#1a1f3c] p-2 rounded text-white border border-gray-600 focus:outline-none"
+                    placeholder="Expense (default 0)"
+                    value={newTask.expense}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, expense: e.target.value })
+                    }
+                  />
                   <select
                     className="bg-[#1a1f3c] p-2 rounded text-white border border-gray-600 focus:outline-none"
                     value={newTask.team_id}
@@ -480,6 +492,12 @@ export default function TeamandTask() {
                                 task.client_org_name || task.client.org_name
                               })`
                             : ""}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          Expense:{" "}
+                          <span className="text-blue-400">
+                            Rs. {task.expense || "0.00"}
+                          </span>
                         </p>
 
                         {/* Checkpoints List */}
