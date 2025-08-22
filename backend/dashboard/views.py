@@ -882,3 +882,22 @@ def generate_default_checkpoints(title):
         f"Document results and learnings from {title}",
         f"Complete final review and submit {title}"
     ]
+    
+    
+def latest_tasks(request):
+    login_email = get_current_user_email(request)  # 🔑 filter by user
+    tasks = Task.objects.filter(login_email=login_email).order_by("-id")[:5]
+
+    data = [
+        {
+            "id": task.id,
+            "title": task.title,
+            "status": task.status,
+            "completed": task.completed,
+            "deadline": task.deadline,
+            "completion_percentage": task.completion_percentage(),
+        }
+        for task in tasks
+    ]
+    print(data)
+    return JsonResponse(data, safe=False)

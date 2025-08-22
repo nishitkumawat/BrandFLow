@@ -80,10 +80,14 @@ const Dashboard = () => {
         });
 
         // Process tasks data
-        if (Array.isArray(tasksRes.data)) {
-          setLatestTasks(tasksRes.data.slice(0, 5));
-        } else if (tasksRes.data) {
-          setLatestTasks([tasksRes.data]);
+
+        try {
+          const res = await axios.get(
+            "http://localhost:8000/dashboard/fetch-current-tasks/"
+          );
+          setLatestTasks(res.data);
+        } catch (error) {
+          console.error("Error fetching latest tasks:", error);
         }
 
         // Generate sample activity data
@@ -174,7 +178,7 @@ const Dashboard = () => {
             />
             <StatCard
               icon={<BarChart3 className="h-6 w-6 text-pink-400" />}
-              title="Campaigns"
+              title="Teams"
               value={stats.teams_count}
             />
             <StatCard

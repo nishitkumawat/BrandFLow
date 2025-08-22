@@ -20,5 +20,5 @@ urlpatterns = [
     path("get-clients/", views.get_clients, name="get-clients"),
     path("get-employees/", views.get_employees, name="get-employees"),
     path("get-teams/", views.get_teams, name="get-teams"),
-    
+    path("fetch-current-tasks/",views.latest_tasks)
 ]

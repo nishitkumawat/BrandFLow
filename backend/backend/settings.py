@@ -142,5 +142,6 @@ EMAIL_HOST_USER = 'nishit1060@gmail.com'
 EMAIL_HOST_PASSWORD = 'mugjbwtmigalkqot'  # use an app password for Gmail
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-MEDIA_URL = '/'
-MEDIA_ROOT = BASE_DIR / 'documents'
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
