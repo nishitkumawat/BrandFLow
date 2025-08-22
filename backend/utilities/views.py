@@ -1,21 +1,24 @@
+import os
+import json
+import base64
+import requests
+from tempfile import NamedTemporaryFile
+from dotenv import load_dotenv
+from django.conf import settings
+from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.core.files.storage import default_storage
-from django.conf import settings
-from django.utils import timezone
 from django.core.mail import send_mail, BadHeaderError, EmailMessage
+
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
+
 from .models import *
-from dotenv import load_dotenv
-import os
-from django.http import HttpResponse
-import requests
-from tempfile import NamedTemporaryFile
-import base64
+from authentication.models import Company
+
 import currentUser
 
 # Load environment variables from .env file
@@ -23,14 +26,6 @@ load_dotenv()
 
 # Replace this with your actual logged-in user's email logic
 def get_current_user_email(request):
-    # Example: if using session-based authentication
-    # return request.session.get('user_email', 'default@example.com')
-    
-    # Example: if using Django's built-in authentication
-    # if request.user.is_authenticated:
-    #     return request.user.email
-    
-    # For testing - you'll need to implement proper authentication
     return currentUser.email # Replace with actual auth logic
 
 
@@ -167,8 +162,26 @@ def generate_marketing_image(request):
         return JsonResponse({'error': 'Prompt is required'}, status=400)
 
     try:
+        login_email = get_current_user_email(request)
+        company = Company.objects.filter(login_email=login_email).first()
+        if not company:
+            return JsonResponse({'error': 'Company not found'}, status=404)
+
+        # ✅ Build prompt with company details
+        company_details = f"""
+        Company Name: {company.company_name}
+        Username: {company.username}
+        Email: {company.email}
+        Company Phone: {company.company_phone_no}
+        Personal Phone: {company.phone_no}
+        Address: {company.company_address}
+        """
+
+        full_prompt = f"{prompt}\n\nUse the following company details:\n{company_details} and use only ENGLISH"
+
+        
         # Call ClipDrop API
-        files = {'prompt': (None, prompt)}
+        files = {'prompt': (None, full_prompt)}
         headers = {'x-api-key': CLIPDROP_API_KEY}
         response = requests.post(CLIPDROP_API_URL, files=files, headers=headers)
         response.raise_for_status()
@@ -181,10 +194,67 @@ def generate_marketing_image(request):
 
         return JsonResponse({
             "image": image_base64,
-            "caption": f"Generated image for: {prompt}"
+            "caption": generate_ai_caption(prompt,company_details)
         })
 
     except requests.exceptions.RequestException as e:
         return JsonResponse({"error": f"ClipDrop error: {str(e)}"}, status=500)
     except Exception as e:
         return JsonResponse({"error": f"Unexpected error: {str(e)}"}, status=500)
+
+
+def generate_ai_caption(prompt: str, company_details: str = "") -> str:
+    """
+    Generate a catchy caption using Gemini AI.
+    Returns a plain string (caption).
+    """
+
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
+    if not GEMINI_API_KEY:
+        return "AI configuration error. Please contact support."
+
+    try:
+        caption_prompt = f"""
+        You are a creative marketing AI assistant.
+        Write one engaging, concise, and catchy caption for the following marketing prompt.
+
+        Prompt: {prompt}
+
+        Company Details:
+        {company_details}
+
+        The caption should:
+        - Be 1 to 2 sentences maximum
+        - Sound professional but appealing
+        - Avoid hashtags or emojis
+        - Be directly usable as a social media caption
+
+        Caption:
+        """
+
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        headers = {"Content-Type": "application/json"}
+        params = {"key": GEMINI_API_KEY}
+        data = {
+            "contents": [{"parts": [{"text": caption_prompt}]}],
+            "generationConfig": {
+                "temperature": 0.7,
+                "topK": 40,
+                "topP": 0.9,
+                "maxOutputTokens": 128,
+            }
+        }
+
+        response = requests.post(url, headers=headers, params=params, json=data)
+        response.raise_for_status()
+        response_data = response.json()
+
+        if "candidates" in response_data and response_data["candidates"]:
+            candidate = response_data["candidates"][0]
+            if "content" in candidate and "parts" in candidate["content"]:
+                return candidate["content"]["parts"][0]["text"].strip()
+
+        return f"Discover more with {prompt}!"
+
+    except Exception:
+        return f"Explore {prompt} with us!"
